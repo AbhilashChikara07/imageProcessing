@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">ImageProject</string>
+    <string name="capture_button">Click to capture photo</string>
+    <string name="desc">Capture image holder</string>
 </resources>
