@@ -1,7 +1,9 @@
 package com.example.okutech.imageproject;
 
+import android.Manifest;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -10,11 +12,17 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.BaseColumns;
 import android.provider.MediaStore;
-import android.support.design.widget.Snackbar;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
+
+import com.bumptech.glide.Glide;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,7 +32,7 @@ import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.util.Calendar;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     /*
     This project is for image operation like ->
@@ -38,50 +46,174 @@ public class MainActivity extends AppCompatActivity {
 
 
     private int REQUEST_IMAGE_CAPTURE = 1;
-    private ImageView imageHolder;
+    private ImageView mShowImage;
+    private Button mTakePhoto;
+    private final int CAMERA_PERMISSION = 1;
+    private final int READ_EXTRA_PERMISSION = 2;
+    private final int WRITE_EXTRA_PERMISSION = 3;
+
+    private File capturedImageFile = null;
+    private Uri capturedImageUri = null;
+    private File mFolderPath;
+
     private File imageFilePath;
-    private ImageOperationUtill imageOperationUtill = new ImageOperationUtill(this);
+    private ImageOperationUtil imageOperationUtil = new ImageOperationUtil(this);
     private Long startScreenTime;
     private File folder;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        imageHolder = (ImageView) findViewById(R.id.captured_photo);
-        Button capturedImageButton = (Button) findViewById(R.id.photo_button);
+        mShowImage = (ImageView) findViewById(R.id.showImage);
+        mTakePhoto = (Button) findViewById(R.id.takePhoto);
+        mTakePhoto.setOnClickListener(this);
 
-        capturedImageButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                startScreenTime = Calendar.getInstance().getTimeInMillis();
-                Intent photoCaptureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                photoCaptureIntent.putExtra(MediaStore.EXTRA_OUTPUT, getFileUrlForOutput());
-                startActivityForResult(photoCaptureIntent, REQUEST_IMAGE_CAPTURE);
-            }
-        });
     }
 
-    private Uri getFileUrlForOutput() {
-        folder = new File(Environment.getExternalStorageDirectory(), "AbhilashImage");// make folder with AbhilashImage
-        if (!folder.mkdir()) {// mkdir is used to create directory in an external directory.
-            if (!folder.exists()) {
-                Snackbar.make(getCurrentFocus(), "Unable to create folder", Snackbar.LENGTH_SHORT).show();
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.takePhoto: {
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA},
+                            CAMERA_PERMISSION);
+                } else {
+                    if (ContextCompat.checkSelfPermission(this,
+                            Manifest.permission.READ_EXTERNAL_STORAGE)
+                            != PackageManager.PERMISSION_GRANTED) {
+                        ActivityCompat.requestPermissions(this,
+                                new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                                READ_EXTRA_PERMISSION);
+                    } else {
+                        if (ContextCompat.checkSelfPermission(this,
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                                != PackageManager.PERMISSION_GRANTED) {
+                            ActivityCompat.requestPermissions(this,
+                                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                                    WRITE_EXTRA_PERMISSION);
+                        } else {
+
+                            startCameraIntent();
+
+                        }
+                    }
+                }
+                break;
             }
         }
-        imageFilePath = new File(folder, String.valueOf(System.currentTimeMillis()) + ".jpg");
-        return Uri.fromFile(imageFilePath);
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == CAMERA_PERMISSION) {
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        READ_EXTRA_PERMISSION);
+            } else {
+                if (ContextCompat.checkSelfPermission(this,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(this,
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                            WRITE_EXTRA_PERMISSION);
+                } else {
+
+                    startCameraIntent();
+
+                }
+            }
+        }
+        if (requestCode == READ_EXTRA_PERMISSION) {
+            if (ContextCompat.checkSelfPermission(this,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        WRITE_EXTRA_PERMISSION);
+            } else {
+
+                startCameraIntent();
+
+            }
+        }
+    }
+
+
+    private void startCameraIntent() {
+        startScreenTime = Calendar.getInstance().getTimeInMillis();
+
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        setsFilePath(getTempFileString());
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, capturedImageUri);
+        startActivityForResult(intent, REQUEST_IMAGE_CAPTURE);
+    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_IMAGE_CAPTURE) {
-            imageHolder.setImageBitmap((Bitmap) data.getExtras().get("data"));
+            Glide.with(this).load(capturedImageUri).into(mShowImage);
             new changeImageRotationAndCompress().execute();
         }
     }
+
+    public void setsFilePath(String value) {
+        capturedImageFile = null;
+        capturedImageUri = null;
+        if (!value.equalsIgnoreCase("")) {
+            capturedImageFile = new File(value);
+
+        /*
+        * This used to get uri.
+        * URI used to pass in camera intent.
+        * URI also help to save image with unique name at same folder always.
+        * */
+
+            capturedImageUri = FileProvider.getUriForFile(
+                    this,
+                    this.getApplicationContext()
+                            .getPackageName() + ".provider", capturedImageFile);
+
+        }
+    }
+
+    private String getTempFileString() {
+        mFolderPath = new File(Environment.getExternalStorageDirectory(), "FolderName");
+
+        /*
+        * mkdirs() used to create folder.
+        * hare "FolderName" is a name of folder which can be anything.
+        * */
+
+        if (mFolderPath != null) {
+            if (!mFolderPath.mkdirs()) {
+                if (!mFolderPath.exists()) {
+                    Log.d(ImageProject.TAG, "Unable to create BroFirst temporary folder");
+                }
+            }
+        }
+
+        /*
+        * Always return a different file path.
+        * We always return different file path by using "String.valueOf(System.currentTimeMillis())".
+        * ".jpg" is used for image. We can use another extension .png also.
+        * */
+
+        return new File(mFolderPath, String.valueOf(System.currentTimeMillis()) + ".jpg").getPath();
+    }
+
+
 
     /*
     * This class is used for
@@ -93,13 +225,13 @@ public class MainActivity extends AppCompatActivity {
     class changeImageRotationAndCompress extends AsyncTask<String, String, String> {
         @Override
         protected String doInBackground(String... strings) {
-            imageOperationUtill.rotateImageOrientation("");
+            imageOperationUtil.rotateImageOrientation("");
             //then transfer file
             File transferredFile = transferFile(imageFilePath);
 
             if (transferredFile != null) {
                 //now compress the image
-                imageOperationUtill.compressImage(transferredFile);
+                imageOperationUtil.compressImage(transferredFile);
                 return transferredFile.getName();
             } else {
                 return "";

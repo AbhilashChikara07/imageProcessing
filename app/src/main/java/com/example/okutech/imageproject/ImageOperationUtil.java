@@ -21,11 +21,11 @@ import static com.bumptech.glide.load.resource.bitmap.TransformationUtils.rotate
  * @since 5/1/17
  */
 
-public class ImageOperationUtill {
+public class ImageOperationUtil {
 
     private Context context;
 
-    public ImageOperationUtill (Context context){
+    public ImageOperationUtil(Context context){
         this.context = context;
     }
     public void rotateImageOrientation(String photoPath) {
