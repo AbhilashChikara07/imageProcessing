@@ -1,11 +1,11 @@
 package com.example.okutech.imageproject;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -17,6 +17,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AppCompatActivity;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -56,10 +57,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Uri capturedImageUri = null;
     private File mFolderPath;
 
-    private File imageFilePath;
     private ImageOperationUtil imageOperationUtil = new ImageOperationUtil(this);
     private Long startScreenTime;
-    private File folder;
+    private FileUploadManager fileUploadManager = new FileUploadManager(this);
 
 
     @Override
@@ -163,7 +163,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_IMAGE_CAPTURE) {
+            /*
+            * By using glide we set image in Image View
+            * Glide is just a third party library.
+            * */
             Glide.with(this).load(capturedImageUri).into(mShowImage);
+
             new changeImageRotationAndCompress().execute();
         }
     }
@@ -214,7 +219,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-
     /*
     * This class is used for
     * 1- Rotate image rotation.
@@ -222,12 +226,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     * 3- Compress file.
     * */
 
+    @SuppressLint("StaticFieldLeak")
     class changeImageRotationAndCompress extends AsyncTask<String, String, String> {
         @Override
         protected String doInBackground(String... strings) {
-            imageOperationUtil.rotateImageOrientation("");
-            //then transfer file
-            File transferredFile = transferFile(imageFilePath);
+
+            /*
+            * This function is used to check ORIENTATION of an image.
+            * Also change image ORIENTATION according to need.
+            * */
+
+            imageOperationUtil.rotateImageOrientation(capturedImageFile.getPath());
+
+            /*
+            * This function is used for transfer file for making private.
+            * Making file as private required because by this no one can't access your file.
+            * */
+            File transferredFile = transferFile(capturedImageFile);
 
             if (transferredFile != null) {
                 //now compress the image
@@ -237,19 +252,67 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 return "";
             }
         }
+
+        @Override
+        protected void onPostExecute(String fileName) {
+            super.onPostExecute(fileName);
+            if (!TextUtils.isEmpty(fileName) && isFileNotEmpty(fileName)) {
+                //update the new internal path
+                File compressedFile = new File(getFilesDir(), fileName);
+
+                //now upload the internal image
+                uploadInternalFileToMediaServer(fileName);
+            }
+        }
+    }
+
+    private boolean isFileNotEmpty(String fileName) {
+        File file = new File(getFilesDir(), fileName);
+        //check if file size is not zero
+        if (file.exists() && file.length() > 0) {
+            return true;
+        } else {
+            try {
+                throw new Exception("File size is zero or doesn't exists.");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return false;
+        }
+    }
+
+
+    private void uploadInternalFileToMediaServer(String fileName) {
+        try {
+            File internalFileForUpload = new File(getFilesDir(), fileName);
+
+            FileUploadTask imageFileUploadTask = new FileUploadTask(internalFileForUpload);
+            imageFileUploadTask.setMediaServerURL(FileUploadTask.MediaServerURL.IMAGE_SERVER_URL);
+            String uploadTaskID = fileUploadManager.enqueueTask(imageFileUploadTask);
+
+            Log.e("uploadTaskID",""+uploadTaskID);
+
+
+        } catch (FileNotFoundException fnfe) {
+            fnfe.printStackTrace();
+        }
     }
 
     public File transferFile(File file) {
+        /*
+        * FileOutputStream is used for perform read write operation.
+        * FileChannel :- are the channels which are required for helping read and write operation.
+        * */
         FileOutputStream fos = null;
         FileChannel inChannel = null;
         FileChannel outChannel = null;
         try {
-            File transferredFileTo = new File(file.getName());// have the original name as the name in internal memory
+            File transferFile = new File(file.getName());// have the original name as the name in internal memory
             inChannel = new FileInputStream(file).getChannel();
-            fos = openFileOutput(transferredFileTo.getName(), MODE_PRIVATE);
+            fos = openFileOutput(transferFile.getName(), MODE_PRIVATE);
             outChannel = fos.getChannel();
             inChannel.transferTo(0, inChannel.size(), outChannel);
-            return transferredFileTo;
+            return transferFile;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
@@ -263,7 +326,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
-                //ultimately delete the file from gallery
+                /*
+                * When we click pic by using camera one copy of image is also make in gallery
+                * along with your folder
+                * So we need to delete that file from default gallery.
+                * */
                 deleteLatestFile();
                 deleteFileFromTempFolder(file);
             }
@@ -294,7 +361,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void deleteFileFromTempFolder(File file) {
-        if (folder.isDirectory() && file != null && file.exists()) {
+        if (mFolderPath.isDirectory() && file != null && file.exists()) {
             file.delete();
         }
     }

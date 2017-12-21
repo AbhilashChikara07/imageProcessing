@@ -1,5 +1,6 @@
 package com.example.okutech.imageproject;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -15,9 +16,9 @@ import android.graphics.Color;
  * @since 5/1/17
  */
 
-public class Utill {
+class Utill {
 
-    public static int calculateInSampleSize(
+    static int calculateInSampleSize(
             BitmapFactory.Options options, int reqWidth, int reqHeight) {
         // Raw height and width of image
         final int height = options.outHeight;
@@ -40,7 +41,7 @@ public class Utill {
         return inSampleSize;
     }
 
-    public static Bitmap getWaterMarkedImage(Context context, Bitmap bmp) {
+    static Bitmap getWaterMarkedImage(Context context, Bitmap bmp) {
         Bitmap bitmap = null;
         try {
             bitmap = bmp.copy(Bitmap.Config.ARGB_8888, true);
@@ -79,4 +80,10 @@ public class Utill {
                 height, filter);
         return newBitmap;
     }
+
+    public static void clearFileUploadNotifications(Context context) {
+        NotificationManager nfmgr = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        nfmgr.cancelAll();
+    }
+
 }

@@ -2,4 +2,9 @@
     <string name="app_name">ImageProject</string>
     <string name="capture_button">Click to capture photo</string>
     <string name="desc">Capture image holder</string>
+
+    <string name="media_upload_uri">https://mstage.broex.net/media/upload/secimg</string>
+    <string name="audio_upload_uri">https://mstage.broex.net/media/upload/audio</string>
+    <string name="file_upload_error">Couldn\'t upload, please check network .</string>
+
 </resources>

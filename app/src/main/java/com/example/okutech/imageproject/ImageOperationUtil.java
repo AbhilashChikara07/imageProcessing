@@ -5,8 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.ExifInterface;
 
-import com.bumptech.glide.util.Util;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -25,10 +23,12 @@ public class ImageOperationUtil {
 
     private Context context;
 
-    public ImageOperationUtil(Context context){
+    public ImageOperationUtil(Context context) {
         this.context = context;
     }
+
     public void rotateImageOrientation(String photoPath) {
+
         int MAX_HEIGHT = 1024;
         int MAX_WIDTH = 1024;
 
@@ -140,49 +140,77 @@ public class ImageOperationUtil {
 
         try {
 
-            ExifInterface exifInterfaceBefore = new ExifInterface(context.getFilesDir() + file.getAbsolutePath());
+            ExifInterface exifInterfaceBefore = new ExifInterface(context.getFilesDir()
+                    + file.getAbsolutePath());
 
             //-------------------save exif data
-            String aperture = exifInterfaceBefore.getAttribute(ExifInterface.TAG_APERTURE);
-            String dateTime = exifInterfaceBefore.getAttribute(ExifInterface.TAG_DATETIME);
-            String exposureTime = exifInterfaceBefore.getAttribute(ExifInterface.TAG_EXPOSURE_TIME);
-            String flash = exifInterfaceBefore.getAttribute(ExifInterface.TAG_FLASH);
-            String focalLength = exifInterfaceBefore.getAttribute(ExifInterface.TAG_FOCAL_LENGTH);
-            String gpsAltitude = exifInterfaceBefore.getAttribute(ExifInterface.TAG_GPS_ALTITUDE);
-            String gpsAltitudeRef = exifInterfaceBefore.getAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF);
-            String gpsDateStamp = exifInterfaceBefore.getAttribute(ExifInterface.TAG_GPS_DATESTAMP);
-            String gpsLatitude = exifInterfaceBefore.getAttribute(ExifInterface.TAG_GPS_LATITUDE);
-            String gpsLatitudeRef = exifInterfaceBefore.getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF);
-            String gpsLongitude = exifInterfaceBefore.getAttribute(ExifInterface.TAG_GPS_LONGITUDE);
-            String gpsLongitudeRef = exifInterfaceBefore.getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF);
-            String gpsProcessingMethod = exifInterfaceBefore.getAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD);
-            String gpsTimestamp = exifInterfaceBefore.getAttribute(ExifInterface.TAG_GPS_TIMESTAMP);
-            Integer imageLength = exifInterfaceBefore.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0);
-            Integer imageWidth = exifInterfaceBefore.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 0);
+            String aperture = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_APERTURE);
+            String dateTime = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_DATETIME);
+            String exposureTime = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_EXPOSURE_TIME);
+            String flash = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_FLASH);
+            String focalLength = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_FOCAL_LENGTH);
+            String gpsAltitude = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_GPS_ALTITUDE);
+            String gpsAltitudeRef = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF);
+            String gpsDateStamp = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_GPS_DATESTAMP);
+            String gpsLatitude = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_GPS_LATITUDE);
+            String gpsLatitudeRef = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_GPS_LATITUDE_REF);
+            String gpsLongitude = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_GPS_LONGITUDE);
+            String gpsLongitudeRef = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF);
+            String gpsProcessingMethod = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD);
+            String gpsTimestamp = exifInterfaceBefore.
+                    getAttribute(ExifInterface.TAG_GPS_TIMESTAMP);
+            Integer imageLength = exifInterfaceBefore.
+                    getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0);
+            Integer imageWidth = exifInterfaceBefore.
+                    getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 0);
+
             String iso = exifInterfaceBefore.getAttribute(ExifInterface.TAG_ISO);
             String make = exifInterfaceBefore.getAttribute(ExifInterface.TAG_MAKE);
             String model = exifInterfaceBefore.getAttribute(ExifInterface.TAG_MODEL);
-            Integer orientation = exifInterfaceBefore.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
-            Integer whiteBalance = exifInterfaceBefore.getAttributeInt(ExifInterface.TAG_WHITE_BALANCE, 0);
-
+            Integer orientation = exifInterfaceBefore.
+                    getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                            ExifInterface.ORIENTATION_NORMAL);
+            Integer whiteBalance = exifInterfaceBefore.
+                    getAttributeInt(ExifInterface.TAG_WHITE_BALANCE, 0);
 
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inJustDecodeBounds = true;
-            BitmapFactory.decodeFile(context.getFilesDir() + file.getAbsolutePath(), options);
-            options.inSampleSize = Utill.calculateInSampleSize(options, 800, 1000);
+            BitmapFactory.decodeFile(context.getFilesDir() + file.getAbsolutePath(),
+                    options);
+
+            options.inSampleSize = Utill.
+                    calculateInSampleSize(options, 800, 1000);
+
             options.inJustDecodeBounds = false;
 
-            Bitmap org = BitmapFactory.decodeFile(context.getFilesDir() + file.getAbsolutePath(), options);
+            Bitmap org = BitmapFactory.decodeFile(context.getFilesDir()
+                    + file.getAbsolutePath(), options);
 
             org = Utill.getWaterMarkedImage(context, org);
 
-            FileOutputStream baos = new FileOutputStream(context.getFilesDir() + file.getAbsolutePath());
-            org.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+            FileOutputStream fos = new FileOutputStream(context.getFilesDir()
+                    + file.getAbsolutePath());
+            assert org != null;
+            org.compress(Bitmap.CompressFormat.JPEG, 80, fos);
 
             //---------------restore exif data
-            ExifInterface exifInterfaceAfter = new ExifInterface(context.getFilesDir() + file.getAbsolutePath());
-            if (orientation != null)
-                exifInterfaceAfter.setAttribute(ExifInterface.TAG_ORIENTATION, orientation.toString());
+            ExifInterface exifInterfaceAfter = new ExifInterface(context.getFilesDir()
+                    + file.getAbsolutePath());
+            exifInterfaceAfter.setAttribute(ExifInterface.TAG_ORIENTATION,
+                    orientation.toString());
             if (aperture != null)
                 exifInterfaceAfter.setAttribute(ExifInterface.TAG_APERTURE, aperture);
             if (dateTime != null)
@@ -196,25 +224,32 @@ public class ImageOperationUtil {
             if (gpsAltitude != null)
                 exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, gpsAltitude);
             if (gpsAltitudeRef != null)
-                exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF, gpsAltitudeRef);
+                exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_ALTITUDE_REF,
+                        gpsAltitudeRef);
             if (gpsDateStamp != null)
                 exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_DATESTAMP, gpsDateStamp);
             if (gpsLatitude != null)
                 exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_LATITUDE, gpsLatitude);
             if (gpsLatitudeRef != null)
-                exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, gpsLatitudeRef);
+                exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF,
+                        gpsLatitudeRef);
             if (gpsLongitude != null)
-                exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, gpsLongitude);
+                exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_LONGITUDE,
+                        gpsLongitude);
             if (gpsLongitudeRef != null)
-                exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, gpsLongitudeRef);
+                exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF,
+                        gpsLongitudeRef);
             if (gpsProcessingMethod != null)
-                exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD, gpsProcessingMethod);
+                exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD,
+                        gpsProcessingMethod);
             if (gpsTimestamp != null)
                 exifInterfaceAfter.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, gpsTimestamp);
             if (imageLength != null)
-                exifInterfaceAfter.setAttribute(ExifInterface.TAG_IMAGE_LENGTH, imageLength.toString());
+                exifInterfaceAfter.setAttribute(ExifInterface.TAG_IMAGE_LENGTH,
+                        imageLength.toString());
             if (imageWidth != null)
-                exifInterfaceAfter.setAttribute(ExifInterface.TAG_IMAGE_WIDTH, imageWidth.toString());
+                exifInterfaceAfter.setAttribute(ExifInterface.TAG_IMAGE_WIDTH,
+                        imageWidth.toString());
             if (iso != null)
                 exifInterfaceAfter.setAttribute(ExifInterface.TAG_ISO, iso);
             if (make != null)
